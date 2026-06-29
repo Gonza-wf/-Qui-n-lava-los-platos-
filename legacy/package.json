@@ -1,0 +1,12 @@
+{
+  "name": "quien-lava-los-platos",
+  "version": "1.0.0",
+  "description": "App PWA para gestionar turnos de lavado de platos.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

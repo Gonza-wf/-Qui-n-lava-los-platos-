@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>¿Quién lava los platos?</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#4bb7b2" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  </head>
+  <body>
+    <div class="splash-screen" id="splashScreen">
+      <div class="splash-card">
+        <div class="splash-icon">🍽</div>
+        <h1>¿Quién lava los platos?</h1>
+        <p>Tu turno, tu app, en modo independiente.</p>
+      </div>
+    </div>
+
+    <div class="user-select-backdrop" id="userSelectOverlay">
+      <div class="user-select-card">
+        <p class="eyebrow">¿Quién sos?</p>
+        <div class="user-buttons">
+          <button class="primary-btn user-select" data-user="Goti">Goti</button>
+          <button class="primary-btn user-select" data-user="Vale">Vale</button>
+        </div>
+      </div>
+    </div>
+    <div class="app-shell">
+      <main class="content">
+        <section class="view active" id="view-today">
+          <div class="hero-card">
+            <div class="hero-head">
+              <span class="chip" id="slotBadge">Tarde</span>
+              <span class="chip subtle">Turno actual</span>
+            </div>
+
+            <div class="person-zone">
+              <p class="eyebrow">Le toca a</p>
+              <h1 id="currentPerson">Goti</h1>
+            </div>
+
+            <div class="actions">
+              <button class="primary-btn" data-action="lavé">Lavé</button>
+              <button class="secondary-btn" data-action="no-pude">No pude</button>
+            </div>
+            <div id="punishmentNotice" class="punishment-panel hidden"></div>
+            <p id="feedbackMessage" class="feedback">Esperando acción.</p>
+            <p id="syncStatus" class="feedback" style="font-size:0.92rem; opacity:0.85;">Estado de sincronización: sin conexión.</p>
+            <div id="mainRewardPanel" class="reward-note hidden"></div>
+          </div>
+
+        </section>
+
+        <section class="view" id="view-history">
+          <div class="panel-card">
+            <div class="panel-title">
+              <h2>Historial</h2>
+            </div>
+            <div id="historyList" class="history-list"></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-racha">
+          <div class="panel-card">
+            <div class="panel-title">
+              <h2>Rachas</h2>
+            </div>
+            <div class="racha-summary">
+              <div class="racha-item">
+                <span>Días cumplidos</span>
+                <strong id="completedDays">0</strong>
+              </div>
+              <div class="racha-item">
+                <span>Fallos</span>
+                <strong id="failedDays">0</strong>
+              </div>
+              <div class="racha-item">
+                <span>Medallas</span>
+                <strong id="medalsCount">0</strong>
+              </div>
+            </div>
+            <div class="reward-card">
+              <div class="reward-meter">
+                <div class="reward-fill" id="rewardFill"></div>
+              </div>
+              <p id="rewardText">Faltan 30 días para la próxima medalla.</p>
+              <p id="rewardExpiry" class="reward-expiry"></p>
+              <div class="racha-actions">
+                <button class="primary-btn small" id="useRewardButton">Usar comodín</button>
+                <button class="ghost-btn small" id="medalsButton">Ver medallas</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+      <div class="bottom-nav" aria-label="Navegación">
+        <button class="tab active" data-view="today">Hoy</button>
+        <button class="tab" data-view="history">Historial</button>
+        <button class="tab" data-view="racha">Rachas</button>
+      </div>
+    </div>
+
+    <div class="modal-backdrop hidden" id="reasonModal" aria-hidden="true">
+      <div class="modal-card">
+        <h3>¿Por qué no pudiste?</h3>
+        <textarea id="reasonInput" maxlength="120" placeholder="Escribe un motivo breve..."></textarea>
+        <div class="modal-actions">
+          <button class="ghost-btn" id="cancelReason">Cancelar</button>
+          <button class="primary-btn" id="saveReason">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="reason-view-backdrop hidden" id="reasonViewOverlay" aria-hidden="true">
+      <div class="reason-view-card">
+        <h3>Motivo</h3>
+        <p id="reasonViewText"></p>
+        <button class="ghost-btn small" id="closeReasonView">Cerrar</button>
+      </div>
+    </div>
+
+    <div class="medals-backdrop hidden" id="medalsOverlay" aria-hidden="true">
+      <div class="medals-card">
+        <h3>Mis medallas</h3>
+        <div id="medalsList" class="medals-list"></div>
+        <button class="ghost-btn small" id="closeMedalsView">Cerrar</button>
+      </div>
+    </div>
+
+    <!-- Admin login modal (hidden) -->
+    <div class="modal-backdrop hidden" id="adminLoginModal" aria-hidden="true">
+      <div class="modal-card">
+        <h3>Acceso administrador</h3>
+        <input id="adminPassword" type="password" placeholder="Clave administrativa" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(31,55,59,0.08);margin-bottom:12px;" />
+        <div class="modal-actions">
+          <button class="ghost-btn" id="adminCancel">Cancelar</button>
+          <button class="primary-btn" id="adminLoginBtn">Entrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin hidden view -->
+    <section class="view" id="view-admin">
+      <div class="panel-card">
+        <div class="panel-title">
+          <h2>Administración</h2>
+        </div>
+        <div style="display:grid;gap:12px;text-align:center;">
+          <label>Usuario</label>
+          <select id="adminUserSelect">
+            <option>Goti</option>
+            <option>Vale</option>
+          </select>
+          <label>Días de castigo</label>
+          <input id="adminPunishmentDays" type="number" min="1" value="2" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(31,55,59,0.08);" />
+          <label>Motivo del castigo</label>
+          <textarea id="adminReason" placeholder="Motivo del castigo..."></textarea>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+            <button class="primary-btn" id="addPunishmentButton">Agregar castigo</button>
+            <button class="ghost-btn" id="resetAppAdmin">Reiniciar app</button>
+          </div>
+          <p style="color:var(--muted);font-size:0.9rem;text-align:center;margin-top:8px;">Acceso vía atajo: Ctrl + Alt + A</p>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch((error) => {
+            console.warn('Service worker registration failed:', error);
+          });
+        });
+      }
+    </script>
+    <script src="app.js"></script>
+  </body>
+</html>
