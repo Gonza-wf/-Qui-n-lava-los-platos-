@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppState } from '../context/AppStateContext';
-import { getTodayKey, getOtherOwnerIndex, computeNextTurnAt } from '../utils/logic';
+import { getTodayKey } from '../utils/logic';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const StreaksView = () => {
@@ -26,9 +26,6 @@ const StreaksView = () => {
     streak.best = Math.max(streak.best, streak.current);
     
     newState.completedDays += 1;
-    newState.lastActionDate = getTodayKey();
-    newState.nextOwner = getOtherOwnerIndex(newState.currentOwner);
-    newState.nextTurnAt = computeNextTurnAt();
 
     newState.entries.unshift({
       id: `${getTodayKey()}-comodin-${Date.now()}`,
