@@ -117,7 +117,7 @@ export function getUserTurnInfo(appState, user) {
     if (tardeDone) {
       return { slot: SLOTS.TARDE, available: false, done: true, message: 'Ya lavaste en la tarde.' };
     }
-    return { slot: SLOTS.TARDE, available: true, message: 'Es tu turno de la tarde.' };
+    return { slot: SLOTS.TARDE, available: true, message: 'Es tu turno de la tarde. (Opcional — si no podés, podés hacerlo en la noche.)' };
   }
 
   // Noche slot
@@ -125,7 +125,7 @@ export function getUserTurnInfo(appState, user) {
     if (nocheDone) {
       return { slot: SLOTS.NOCHE, available: false, done: true, message: 'Ya lavaste en la noche.' };
     }
-    return { slot: SLOTS.NOCHE, available: true, message: tardeDone ? 'Es tu turno de la noche.' : 'Tarde pendiente + noche pendiente. Podés recuperar mañana.' };
+    return { slot: SLOTS.NOCHE, available: true, message: '¡Turno de noche! Si no podés, tendrás que hacerlo mañana a la mañana.' };
   }
 
   // Mañana slot
@@ -149,7 +149,7 @@ export function processAction(appState, user, slot, action, reason = '') {
   const newState = JSON.parse(JSON.stringify(appState));
   const todayKey = getTodayKey();
 
-  // Ensure slot tracking structure exists
+  // Ensure structures exist
   if (!newState.slotsDoneToday) newState.slotsDoneToday = {};
   if (!newState.slotsDoneToday[todayKey]) newState.slotsDoneToday[todayKey] = {};
   if (!newState.slotsDoneToday[todayKey][user]) {
@@ -172,17 +172,12 @@ export function processAction(appState, user, slot, action, reason = '') {
   newState.entries = keepRecentDays([entry, ...newState.entries]);
 
   if (action === 'lavé') {
-    // Mark slot done
     newState.slotsDoneToday[todayKey][user][slot] = true;
     newState.completedDays += 1;
     newState.lastActionDate = todayKey;
 
-    // Clear pending morning if this was the makeup
-    if (isMakeup) {
-      newState.pendingMorning[user] = false;
-    }
+    if (isMakeup) newState.pendingMorning[user] = false;
 
-    // Update streak
     const streak = newState.streaks[user];
     streak.current += 1;
     streak.best = Math.max(streak.best, streak.current);
@@ -196,42 +191,41 @@ export function processAction(appState, user, slot, action, reason = '') {
         : 'Castigo cumplido.';
     }
 
-    // Medal check every 30 completed slots
+    // Medal every 30 completed slots
     if (streak.current > 0 && streak.current % 30 === 0 && !streak.rewardAvailable) {
       streak.rewardAvailable = true;
       streak.rewardExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
       streak.medals += 1;
       streak.medalsHistory.push(todayKey);
     }
+
   } else {
     // Missed slot
-    newState.failedDays += 1;
-    newState.streaks[user].current = 0;
     newState.lastActionDate = todayKey;
 
     if (isMakeup) {
-      // Missed makeup morning → auto punishment
+      // ❌ Missed morning makeup → automatic 2-day punishment
       newState.pendingMorning[user] = false;
-      newState.punishments[user] = (newState.punishments[user] || 0) + 2;
+      newState.failedDays += 1;
       newState.streaks[user].current = 0;
+      newState.punishments[user] = (newState.punishments[user] || 0) + 2;
       entry.action = 'Castigo automático';
-      entry.reason = 'No lavó en el turno de compensación. +2 días de castigo.';
+      entry.reason = 'No recuperó el turno de mañana. +2 días de castigo.';
       entry.status = 'castigo';
+
     } else if (slot === SLOTS.TARDE) {
-      // Missed tarde → morning makeup pending
-      newState.pendingMorning[user] = true;
+      // ❌ Missed tarde → no penalty, just logged as skipped
+      // Streak is not broken, no morning obligation
+      entry.action = 'Saltó turno tarde';
+      entry.status = 'no-pude';
+
     } else if (slot === SLOTS.NOCHE) {
-      const tardeDone = newState.slotsDoneToday?.[todayKey]?.[user]?.tarde;
-      if (!tardeDone) {
-        // Missed both → 2-day punishment
-        newState.punishments[user] = (newState.punishments[user] || 0) + 2;
-        entry.reason = reason || 'No lavó tarde ni noche. +2 días de castigo.';
-        entry.status = 'castigo';
-        newState.pendingMorning[user] = false;
-      } else {
-        // Only missed noche → morning makeup
-        newState.pendingMorning[user] = true;
-      }
+      // ❌ Missed noche → morning makeup required
+      newState.pendingMorning[user] = true;
+      newState.failedDays += 1;
+      newState.streaks[user].current = 0;
+      entry.action = 'Falló noche — recuperar mañana';
+      entry.status = 'no-pude';
     }
   }
 
