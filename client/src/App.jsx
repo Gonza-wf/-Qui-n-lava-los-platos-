@@ -6,6 +6,8 @@ import TodayView from './components/TodayView';
 import HistoryView from './components/HistoryView';
 import StreaksView from './components/StreaksView';
 import AdminView from './components/AdminView';
+import { requestNotificationPermission, scheduleDailyReminder } from './utils/notifications';
+import { getOwnerName } from './utils/logic';
 
 function App() {
   const { appState, isConnected, selectedUser, selectUser } = useAppState();
@@ -23,6 +25,16 @@ function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Request notification permission and start daily reminder
+  useEffect(() => {
+    if (!appState) return;
+    requestNotificationPermission();
+    const intervalId = scheduleDailyReminder(
+      () => getOwnerName(appState.currentOwner)
+    );
+    return () => clearInterval(intervalId);
+  }, [appState?.currentOwner]);
 
   if (!appState) {
     return (
