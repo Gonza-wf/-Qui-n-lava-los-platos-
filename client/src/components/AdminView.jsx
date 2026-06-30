@@ -24,6 +24,7 @@ const AdminView = () => {
   const handleReset = () => {
     if (confirm('¿Estás seguro de reiniciar TODOS los datos de la app? Esto no se puede deshacer.')) {
       resetState();
+      localStorage.removeItem('selectedUser');
       alert('Aplicación reiniciada');
       window.location.reload();
     }
@@ -73,6 +74,21 @@ const AdminView = () => {
 
           <button className="btn btn-primary" style={{marginTop: 16}} onClick={handleAddPunishment}>
             Aplicar Castigo
+          </button>
+        </div>
+
+        <hr style={{border: 0, borderTop: '1px solid rgba(0,0,0,0.1)', margin: '40px 0'}} />
+
+        <div style={{textAlign: 'center', marginBottom: 32}}>
+          <h3 style={{marginBottom: 16}}>Opciones del dispositivo</h3>
+          <p style={{color: 'var(--muted)', fontSize: '0.9rem', marginBottom: 20}}>
+            Si elegiste mal al usuario al inicio (Goti o Vale), podés cerrar sesión y volver a elegir.
+          </p>
+          <button className="btn btn-secondary" onClick={() => {
+            localStorage.removeItem('selectedUser');
+            window.location.reload();
+          }}>
+            Cambiar de Usuario (Cerrar Sesión)
           </button>
         </div>
 
