@@ -101,21 +101,28 @@ export function getUserTurnInfo(appState, user) {
       available: true,
       message: 'Tienes que lavar ahora para compensar ayer.',
       isMakeup: true
-    };
-  }
-
-  // 3. Expired pending morning
-  if (isPending && currentSlot !== SLOTS.MANANA) {
+  // 3. Pending morning, but it's currently Noche (meaning they just missed it)
+  if (isPending && currentSlot === SLOTS.NOCHE) {
     return {
       slot: SLOTS.MANANA,
       available: false,
-      message: 'Se venció la compensación. El admin debe aplicar castigo.',
+      message: 'Fallaste la noche. Acordate de recuperar mañana a la mañana.',
+      waiting: true
+    };
+  }
+
+  // 4. Expired pending morning (it's Tarde, morning has passed)
+  if (isPending && currentSlot === SLOTS.TARDE) {
+    return {
+      slot: SLOTS.MANANA,
+      available: false,
+      message: 'Se venció la compensación (ya es tarde). Hubo castigo automático.',
       isMakeup: true,
       expired: true
     };
   }
 
-  // 4. If it's NOT their day (and no makeup pending), they shouldn't wash
+  // 5. If it's NOT their day (and no makeup pending), they shouldn't wash
   if (!isMyDay) {
     return { slot: currentSlot, available: false, waiting: true, message: 'Hoy no es tu día.' };
   }
