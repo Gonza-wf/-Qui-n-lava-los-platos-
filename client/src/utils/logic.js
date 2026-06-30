@@ -105,6 +105,9 @@ export function getUserTurnInfo(appState, user) {
       available: true,
       message: 'Tienes que lavar ahora para compensar ayer.',
       isMakeup: true
+    };
+  }
+
   // 3. Pending morning, but it's currently Noche (meaning they just missed it)
   if (isPending && currentSlot === SLOTS.NOCHE) {
     return {
