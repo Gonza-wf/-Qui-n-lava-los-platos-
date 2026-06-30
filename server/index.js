@@ -20,7 +20,7 @@ const io = new Server(server, {
 const DATA_FILE = path.join(__dirname, 'data.json');
 
 const initialState = {
-  currentOwner: 1, // 0=Goti, 1=Vale — cambia esto para decidir quién empieza
+  currentOwner: 0, // 0=Goti, 1=Vale
   streaks: {
     'Goti': { current: 0, best: 0, medals: 0, rewardAvailable: false, rewardExpiresAt: null, rewardUsed: false, medalsHistory: [] },
     'Vale': { current: 0, best: 0, medals: 0, rewardAvailable: false, rewardExpiresAt: null, rewardUsed: false, medalsHistory: [] }
@@ -32,8 +32,8 @@ const initialState = {
   nextOwner: null,
   nextTurnAt: null,
   punishments: { Goti: 0, Vale: 0 },
-  slotsDoneToday: {},   // { "2026-06-29": { Goti: { tarde: bool, noche: bool, mañana: bool }, Vale: {...} } }
-  pendingMorning: { Goti: false, Vale: false }, // makeup slot after missing tarde/noche
+  slotsDoneToday: {},
+  pendingMorning: { Goti: false, Vale: false },
   lastDayChangeDate: null
 };
 
@@ -46,7 +46,7 @@ function loadState() {
   } catch (error) {
     console.error('Error loading state:', error);
   }
-  return initialState;
+  return JSON.parse(JSON.stringify(initialState));
 }
 
 function saveState(state) {
@@ -57,7 +57,48 @@ function saveState(state) {
   }
 }
 
+/**
+ * Returns YYYY-MM-DD for the TURN DATE (Argentina timezone UTC-3).
+ * The "turn" starts at 15:00 local. Before 15:00 we still belong to yesterday's turn.
+ */
+function getTurnDateKey() {
+  // UTC offset for Argentina (UTC-3): subtract 3 hours
+  const now = new Date();
+  // Argentina local time = UTC - 3h
+  const argOffset = -3 * 60; // minutes
+  const localMs = now.getTime() + (argOffset * 60 * 1000);
+  const localDate = new Date(localMs);
+  const h = localDate.getUTCHours();
+  if (h < 15) {
+    localDate.setUTCDate(localDate.getUTCDate() - 1);
+  }
+  const y = localDate.getUTCFullYear();
+  const m = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(localDate.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function checkAndFlipTurn() {
+  const currentTurnDateKey = getTurnDateKey();
+  if (appState.lastDayChangeDate === currentTurnDateKey) return; // already flipped today
+
+  console.log(`[Turn] Flipping from lastDayChangeDate=${appState.lastDayChangeDate} to ${currentTurnDateKey}`);
+
+  if (appState.lastDayChangeDate !== null) {
+    // Alternate owner
+    appState.currentOwner = appState.currentOwner === 0 ? 1 : 0;
+  }
+  appState.lastDayChangeDate = currentTurnDateKey;
+  saveState(appState);
+  io.emit('stateUpdated', appState);
+  console.log(`[Turn] New owner index: ${appState.currentOwner}`);
+}
+
 let appState = loadState();
+
+// Run turn check immediately on server start and then every minute
+checkAndFlipTurn();
+setInterval(checkAndFlipTurn, 60_000);
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
@@ -71,7 +112,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('resetState', () => {
-    appState = initialState;
+    appState = JSON.parse(JSON.stringify(initialState));
     saveState(appState);
     io.emit('stateUpdated', appState);
   });

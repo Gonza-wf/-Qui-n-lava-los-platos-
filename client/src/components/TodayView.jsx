@@ -29,12 +29,17 @@ const TodayView = () => {
   const [pendingAction, setPendingAction] = useState(null); // { slot }
   const [reason, setReason] = useState('');
 
-  // On load: check if makeup slots expired → auto-punish
+  // Check every minute if we crossed 15:00 (turn change) or expired makeups
   useEffect(() => {
     if (!appState) return;
-    const updated = checkExpiredMakeup(appState);
-    if (updated !== appState) syncState(updated);
-  }, []);
+    const run = () => {
+      const updated = checkExpiredMakeup(appState);
+      if (updated !== appState) syncState(updated);
+    };
+    run(); // run immediately on mount
+    const id = setInterval(run, 60_000); // and every minute
+    return () => clearInterval(id);
+  }, [appState?.lastDayChangeDate]);
 
   if (!appState || !selectedUser) return null;
 
