@@ -352,18 +352,23 @@ textarea.input-field {
   /* Disable heavy blob animations and reduce blur */
   body::before, body::after {
     animation: none;
-    filter: blur(40px);
+    filter: blur(20px);
+    opacity: 0.5; /* reduce painting cost */
   }
   
-  /* Reduce glassmorphism blur intensity */
+  /* Disable glassmorphism blur and shadow to guarantee 60fps */
   .glass-panel {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* very simple shadow */
+    border: 1px solid rgba(0,0,0,0.05);
   }
-
-  /* Simplify the overlay blur */
+  
+  /* Remove overlay blur */
   .overlay {
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }

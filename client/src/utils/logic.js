@@ -18,7 +18,11 @@ export function getSlotLabel(slot) {
 }
 
 export function getTodayKey() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export function getOwnerName(index) {
@@ -280,7 +284,10 @@ export function checkExpiredMakeup(appState) {
   if (now.getHours() < 15) {
     turnDateObj.setDate(turnDateObj.getDate() - 1);
   }
-  const currentTurnDateKey = turnDateObj.toISOString().slice(0, 10);
+  const year = turnDateObj.getFullYear();
+  const month = String(turnDateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(turnDateObj.getDate()).padStart(2, '0');
+  const currentTurnDateKey = `${year}-${month}-${day}`;
 
   if (newState.lastDayChangeDate !== currentTurnDateKey) {
     newState.currentOwner = getOtherOwnerIndex(newState.currentOwner);
