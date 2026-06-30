@@ -293,7 +293,9 @@ export function checkExpiredMakeup(appState) {
   const currentTurnDateKey = `${year}-${month}-${day}`;
 
   if (newState.lastDayChangeDate !== currentTurnDateKey) {
-    newState.currentOwner = getOtherOwnerIndex(newState.currentOwner);
+    if (newState.lastDayChangeDate !== null) {
+      newState.currentOwner = getOtherOwnerIndex(newState.currentOwner);
+    }
     newState.lastDayChangeDate = currentTurnDateKey;
     changed = true;
   }
