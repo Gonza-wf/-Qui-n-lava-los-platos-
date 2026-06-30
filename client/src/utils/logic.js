@@ -137,14 +137,17 @@ export function getUserTurnInfo(appState, user) {
   // 5. It IS their day
   if (currentSlot === SLOTS.TARDE) {
     if (tardeDone) {
-      return { slot: SLOTS.TARDE, available: false, done: true, message: 'Ya lavaste en la tarde.' };
+      return { slot: SLOTS.TARDE, available: false, done: true, message: '✓ Tarde hecha. Te queda el turno de noche (20:00).' };
     }
-    return { slot: SLOTS.TARDE, available: true, message: 'Es tu turno de la tarde. (Opcional — si no podés, podés hacerlo en la noche.)' };
+    return { slot: SLOTS.TARDE, available: true, message: 'Turno de tarde. (Opcional — también podés hacerlo en la noche.)' };
   }
 
   if (currentSlot === SLOTS.NOCHE) {
     if (nocheDone) {
-      return { slot: SLOTS.NOCHE, available: false, done: true, message: 'Ya lavaste en la noche.' };
+      return { slot: SLOTS.NOCHE, available: false, done: true, message: '✓ ¡Día completado! Lavaste noche.' };
+    }
+    if (tardeDone) {
+      return { slot: SLOTS.NOCHE, available: true, message: '¡Turno de noche! Ya hiciste la tarde. Si no podés, tendrás que hacerlo mañana a la mañana.' };
     }
     return { slot: SLOTS.NOCHE, available: true, message: '¡Turno de noche! Si no podés, tendrás que hacerlo mañana a la mañana.' };
   }
@@ -192,19 +195,24 @@ export function processAction(appState, user, slot, action, reason = '') {
 
     if (action === 'lavé') {
     newState.slotsDoneToday[todayKey][user][slot] = true;
-    
-    // Ensure the structure exists for older state versions
-    if (typeof newState.completedDays !== 'object') {
-      newState.completedDays = { Goti: newState.completedDays || 0, Vale: newState.completedDays || 0 };
-    }
-    newState.completedDays[user] += 1;
     newState.lastActionDate = todayKey;
 
     if (isMakeup) newState.pendingMorning[user] = false;
 
+    // Ensure the structure exists for older state versions
+    if (typeof newState.completedDays !== 'object') {
+      newState.completedDays = { Goti: newState.completedDays || 0, Vale: newState.completedDays || 0 };
+    }
+
+    // Only count a completed day when NOCHE or MAÑANA (makeup) is done
+    const isDayCompleting = slot === SLOTS.NOCHE || isMakeup;
+
     const streak = newState.streaks[user];
-    streak.current += 1;
-    streak.best = Math.max(streak.best, streak.current);
+    if (isDayCompleting) {
+      newState.completedDays[user] += 1;
+      streak.current += 1;
+      streak.best = Math.max(streak.best, streak.current);
+    }
 
     // Reduce punishment if any
     if (newState.punishments[user] > 0) {
@@ -215,8 +223,8 @@ export function processAction(appState, user, slot, action, reason = '') {
         : 'Castigo cumplido.';
     }
 
-    // Medal every 30 completed slots
-    if (streak.current > 0 && streak.current % 30 === 0 && !streak.rewardAvailable) {
+    // Medal every 30 completed days
+    if (isDayCompleting && streak.current > 0 && streak.current % 30 === 0 && !streak.rewardAvailable) {
       streak.rewardAvailable = true;
       streak.rewardExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
       streak.medals += 1;

@@ -161,7 +161,9 @@ const TodayView = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <strong style={{ fontSize: '1.1rem' }}>{otherUser}</strong>
           <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
-            {otherInfo.done ? 'Completado' : (otherInfo.waiting ? 'Esperando tarde' : 'Pendiente')}
+            {isMyDay
+              ? (otherInfo.done ? 'Completado' : 'Pendiente')
+              : 'Hoy es su día'}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
