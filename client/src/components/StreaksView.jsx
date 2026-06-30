@@ -24,8 +24,10 @@ const StreaksView = () => {
     streak.rewardExpiresAt = null;
     streak.current += 1;
     streak.best = Math.max(streak.best, streak.current);
-    
-    newState.completedDays += 1;
+    if (typeof newState.completedDays !== 'object') {
+      newState.completedDays = { Goti: newState.completedDays || 0, Vale: newState.completedDays || 0 };
+    }
+    newState.completedDays[displayUser] += 1;
 
     newState.entries.unshift({
       id: `${getTodayKey()}-comodin-${Date.now()}`,
@@ -48,11 +50,15 @@ const StreaksView = () => {
         <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 48, width: '100%'}}>
           <div style={{flex: 1}}>
             <div className="eyebrow" style={{marginBottom: 12}}>Días</div>
-            <strong style={{fontSize: '2.5rem', color: 'var(--accent)', lineHeight: 1}}>{appState.completedDays}</strong>
+            <strong style={{fontSize: '2.5rem', color: 'var(--accent)', lineHeight: 1}}>
+              {typeof appState.completedDays === 'object' ? (appState.completedDays[displayUser] || 0) : appState.completedDays}
+            </strong>
           </div>
           <div style={{flex: 1}}>
             <div className="eyebrow" style={{marginBottom: 12}}>Fallos</div>
-            <strong style={{fontSize: '2.5rem', color: 'var(--danger)', lineHeight: 1}}>{appState.failedDays}</strong>
+            <strong style={{fontSize: '2.5rem', color: 'var(--danger)', lineHeight: 1}}>
+              {typeof appState.failedDays === 'object' ? (appState.failedDays[displayUser] || 0) : appState.failedDays}
+            </strong>
           </div>
           <div style={{flex: 1}}>
             <div className="eyebrow" style={{marginBottom: 12}}>Trofeos</div>

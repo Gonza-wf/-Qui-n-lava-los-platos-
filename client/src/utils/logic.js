@@ -190,9 +190,14 @@ export function processAction(appState, user, slot, action, reason = '') {
 
   newState.entries = keepRecentDays([entry, ...newState.entries]);
 
-  if (action === 'lavé') {
+    if (action === 'lavé') {
     newState.slotsDoneToday[todayKey][user][slot] = true;
-    newState.completedDays += 1;
+    
+    // Ensure the structure exists for older state versions
+    if (typeof newState.completedDays !== 'object') {
+      newState.completedDays = { Goti: newState.completedDays || 0, Vale: newState.completedDays || 0 };
+    }
+    newState.completedDays[user] += 1;
     newState.lastActionDate = todayKey;
 
     if (isMakeup) newState.pendingMorning[user] = false;
@@ -222,10 +227,14 @@ export function processAction(appState, user, slot, action, reason = '') {
     // Missed slot
     newState.lastActionDate = todayKey;
 
+    if (typeof newState.failedDays !== 'object') {
+      newState.failedDays = { Goti: newState.failedDays || 0, Vale: newState.failedDays || 0 };
+    }
+
     if (isMakeup) {
       // ❌ Missed morning makeup → automatic 2-day punishment
       newState.pendingMorning[user] = false;
-      newState.failedDays += 1;
+      newState.failedDays[user] += 1;
       newState.streaks[user].current = 0;
       newState.punishments[user] = (newState.punishments[user] || 0) + 2;
       entry.action = 'Castigo automático';
@@ -241,7 +250,7 @@ export function processAction(appState, user, slot, action, reason = '') {
     } else if (slot === SLOTS.NOCHE) {
       // ❌ Missed noche → morning makeup required
       newState.pendingMorning[user] = true;
-      newState.failedDays += 1;
+      newState.failedDays[user] += 1;
       newState.streaks[user].current = 0;
       entry.action = 'Falló noche — recuperar mañana';
       entry.status = 'no-pude';
@@ -265,7 +274,12 @@ export function processPunishment(appState, user, reason, days) {
   };
 
   newState.entries = keepRecentDays([entry, ...newState.entries]);
-  newState.failedDays += 1;
+  
+  if (typeof newState.failedDays !== 'object') {
+    newState.failedDays = { Goti: newState.failedDays || 0, Vale: newState.failedDays || 0 };
+  }
+  newState.failedDays[user] += 1;
+  
   newState.punishments[user] = (newState.punishments[user] || 0) + days;
   if (newState.streaks[user]) {
     newState.streaks[user].current = 0;
@@ -306,13 +320,17 @@ export function checkExpiredMakeup(appState) {
 
   if (!newState.pendingMorning) return changed ? newState : appState;
 
+  if (typeof newState.failedDays !== 'object') {
+    newState.failedDays = { Goti: newState.failedDays || 0, Vale: newState.failedDays || 0 };
+  }
+
   for (const user of USERS) {
     if (newState.pendingMorning[user] && currentSlot === SLOTS.TARDE) {
       // Morning is now over, auto-punish
       newState.pendingMorning[user] = false;
       newState.punishments[user] = (newState.punishments[user] || 0) + 2;
       newState.streaks[user].current = 0;
-      newState.failedDays += 1;
+      newState.failedDays[user] += 1;
       newState.entries = keepRecentDays([{
         id: `${todayKey}-auto-castigo-${user}-${Date.now()}`,
         date: todayKey,

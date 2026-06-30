@@ -43,6 +43,7 @@ const TodayView = () => {
   // Per-user turn info
   const myInfo = getUserTurnInfo(appState, selectedUser);
   const otherInfo = getUserTurnInfo(appState, otherUser);
+  const isMyDay = getOwnerName(appState.currentOwner) === selectedUser;
 
   const myTardeDone = getUserSlotDoneToday(appState, selectedUser, SLOTS.TARDE);
   const myNocheDone = getUserSlotDoneToday(appState, selectedUser, SLOTS.NOCHE);
@@ -96,7 +97,7 @@ const TodayView = () => {
         className="glass-panel"
         style={{ textAlign: 'center', padding: '32px 24px' }}
       >
-        <p className="eyebrow" style={{ marginBottom: 6 }}>Tu turno</p>
+        <p className="eyebrow" style={{ marginBottom: 6 }}>{isMyDay ? 'Hoy es tu día' : 'Hoy le toca al otro'}</p>
         <h2 style={{ marginBottom: 24 }}>{selectedUser}</h2>
 
         {/* Slot progress */}

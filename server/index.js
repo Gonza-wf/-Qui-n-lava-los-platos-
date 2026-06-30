@@ -26,8 +26,8 @@ const initialState = {
     'Vale': { current: 0, best: 0, medals: 0, rewardAvailable: false, rewardExpiresAt: null, rewardUsed: false, medalsHistory: [] }
   },
   entries: [],
-  completedDays: 0,
-  failedDays: 0,
+  completedDays: { Goti: 0, Vale: 0 },
+  failedDays: { Goti: 0, Vale: 0 },
   lastActionDate: null,
   nextOwner: null,
   nextTurnAt: null,
