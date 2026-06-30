@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppState } from '../context/AppStateContext';
 import {
   getUserTurnInfo, getUserSlotDoneToday, getUserPendingMorning,
-  processAction, checkExpiredMakeup, getSlotLabel, SLOTS, USERS, getOtherUser
+  processAction, checkExpiredMakeup, getSlotLabel, SLOTS, USERS, getOtherUser, getOwnerName
 } from '../utils/logic';
 import { motion, AnimatePresence } from 'framer-motion';
 
