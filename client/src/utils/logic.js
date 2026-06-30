@@ -86,12 +86,15 @@ export function getUserTurnInfo(appState, user) {
   const h = now.getHours();
   const currentSlot = getCurrentSlot();
   const today = getTodayKey();
+  
   const isPending = getUserPendingMorning(appState, user);
-
   const tardeDone = getUserSlotDoneToday(appState, user, SLOTS.TARDE);
   const nocheDone = getUserSlotDoneToday(appState, user, SLOTS.NOCHE);
 
-  // If user has a pending morning makeup slot
+  // 1. Is it this user's day?
+  const isMyDay = getOwnerName(appState.currentOwner) === user;
+
+  // 2. Pending morning makeup slot
   if (isPending && currentSlot === SLOTS.MANANA) {
     return {
       slot: SLOTS.MANANA,
@@ -101,7 +104,7 @@ export function getUserTurnInfo(appState, user) {
     };
   }
 
-  // If pending morning but we're past morning — auto-punishment territory
+  // 3. Expired pending morning
   if (isPending && currentSlot !== SLOTS.MANANA) {
     return {
       slot: SLOTS.MANANA,
@@ -112,7 +115,12 @@ export function getUserTurnInfo(appState, user) {
     };
   }
 
-  // Tarde slot
+  // 4. If it's NOT their day (and no makeup pending), they shouldn't wash
+  if (!isMyDay) {
+    return { slot: currentSlot, available: false, waiting: true, message: 'Hoy no es tu día.' };
+  }
+
+  // 5. It IS their day
   if (currentSlot === SLOTS.TARDE) {
     if (tardeDone) {
       return { slot: SLOTS.TARDE, available: false, done: true, message: 'Ya lavaste en la tarde.' };
@@ -120,7 +128,6 @@ export function getUserTurnInfo(appState, user) {
     return { slot: SLOTS.TARDE, available: true, message: 'Es tu turno de la tarde. (Opcional — si no podés, podés hacerlo en la noche.)' };
   }
 
-  // Noche slot
   if (currentSlot === SLOTS.NOCHE) {
     if (nocheDone) {
       return { slot: SLOTS.NOCHE, available: false, done: true, message: 'Ya lavaste en la noche.' };
@@ -128,13 +135,11 @@ export function getUserTurnInfo(appState, user) {
     return { slot: SLOTS.NOCHE, available: true, message: '¡Turno de noche! Si no podés, tendrás que hacerlo mañana a la mañana.' };
   }
 
-  // Mañana slot
   if (currentSlot === SLOTS.MANANA) {
-    // No pending: waiting for tarde
     return {
       slot: SLOTS.TARDE,
       available: false,
-      message: 'El próximo turno comienza a las 15:00.',
+      message: 'Tu turno comienza a las 15:00.',
       waiting: true
     };
   }
@@ -255,13 +260,32 @@ export function processPunishment(appState, user, reason, days) {
 }
 
 export function checkExpiredMakeup(appState) {
-  // Called on app load to auto-flag expired makeups
-  const currentSlot = getCurrentSlot();
-  if (currentSlot === SLOTS.MANANA) return appState; // still time
-
+  // 1. First check if we crossed into a new day (15:00) to change the turn owner
+  let newState = JSON.parse(JSON.stringify(appState));
   let changed = false;
-  const newState = JSON.parse(JSON.stringify(appState));
-  if (!newState.pendingMorning) return appState;
+
+  const now = new Date();
+  const todayKey = getTodayKey();
+  
+  // A new turn starts at 15:00. If we are past 15:00, the "turn date" is today.
+  // If we are before 15:00, the "turn date" is actually yesterday.
+  const turnDateObj = new Date(now);
+  if (now.getHours() < 15) {
+    turnDateObj.setDate(turnDateObj.getDate() - 1);
+  }
+  const currentTurnDateKey = turnDateObj.toISOString().slice(0, 10);
+
+  if (newState.lastDayChangeDate !== currentTurnDateKey) {
+    newState.currentOwner = getOtherOwnerIndex(newState.currentOwner);
+    newState.lastDayChangeDate = currentTurnDateKey;
+    changed = true;
+  }
+
+  // 2. Check for expired makeups
+  const currentSlot = getCurrentSlot();
+  if (currentSlot === SLOTS.MANANA) return changed ? newState : appState; // still time
+
+  if (!newState.pendingMorning) return changed ? newState : appState;
 
   for (const user of USERS) {
     if (newState.pendingMorning[user] && currentSlot === SLOTS.TARDE) {
@@ -270,7 +294,6 @@ export function checkExpiredMakeup(appState) {
       newState.punishments[user] = (newState.punishments[user] || 0) + 2;
       newState.streaks[user].current = 0;
       newState.failedDays += 1;
-      const todayKey = getTodayKey();
       newState.entries = keepRecentDays([{
         id: `${todayKey}-auto-castigo-${user}-${Date.now()}`,
         date: todayKey,

@@ -33,7 +33,8 @@ const initialState = {
   nextTurnAt: null,
   punishments: { Goti: 0, Vale: 0 },
   slotsDoneToday: {},   // { "2026-06-29": { Goti: { tarde: bool, noche: bool, mañana: bool }, Vale: {...} } }
-  pendingMorning: { Goti: false, Vale: false } // makeup slot after missing tarde/noche
+  pendingMorning: { Goti: false, Vale: false }, // makeup slot after missing tarde/noche
+  lastDayChangeDate: null
 };
 
 function loadState() {
