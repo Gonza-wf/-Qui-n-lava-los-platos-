@@ -346,3 +346,24 @@ textarea.input-field {
   flex: 1;
   height: 100%;
 }
+
+/* Mobile Performance Optimizations */
+@media (max-width: 768px) {
+  /* Disable heavy blob animations and reduce blur */
+  body::before, body::after {
+    animation: none;
+    filter: blur(40px);
+  }
+  
+  /* Reduce glassmorphism blur intensity */
+  .glass-panel {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Simplify the overlay blur */
+  .overlay {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
