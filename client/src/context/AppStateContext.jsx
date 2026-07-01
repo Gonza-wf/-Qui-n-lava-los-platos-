@@ -59,6 +59,8 @@ export const AppStateProvider = ({ children }) => {
   const syncState = (updates) => {
     if (!socket || !appState) return;
     const newState = { ...appState, ...updates };
+    // Save locally immediately to guarantee backup exists for the sender
+    try { localStorage.setItem(STATE_BACKUP_KEY, JSON.stringify(newState)); } catch {}
     setAppState(newState); // Optimistic update
     socket.emit('syncState', newState);
   };
