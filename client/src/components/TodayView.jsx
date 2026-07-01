@@ -29,17 +29,14 @@ const TodayView = () => {
   const [pendingAction, setPendingAction] = useState(null); // { slot }
   const [reason, setReason] = useState('');
 
-  // Check every minute if we crossed 15:00 (turn change) or expired makeups
+  // On load: server handles turn-flips and auto-punishments.
+  // We only need to check once on mount if state needs a client-side update.
   useEffect(() => {
     if (!appState) return;
-    const run = () => {
-      const updated = checkExpiredMakeup(appState);
-      if (updated !== appState) syncState(updated);
-    };
-    run(); // run immediately on mount
-    const id = setInterval(run, 60_000); // and every minute
-    return () => clearInterval(id);
-  }, [appState?.lastDayChangeDate]);
+    const updated = checkExpiredMakeup(appState);
+    if (updated !== appState) syncState(updated);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appState?.lastDayChangeDate, appState?.pendingMorning?.Goti, appState?.pendingMorning?.Vale]);
 
   if (!appState || !selectedUser) return null;
 

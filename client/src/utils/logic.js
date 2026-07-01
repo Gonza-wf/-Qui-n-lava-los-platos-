@@ -296,61 +296,7 @@ export function processPunishment(appState, user, reason, days) {
 }
 
 export function checkExpiredMakeup(appState) {
-  // 1. First check if we crossed into a new day (15:00) to change the turn owner
-  let newState = JSON.parse(JSON.stringify(appState));
-  let changed = false;
-
-  const now = new Date();
-  const todayKey = getTodayKey();
-  
-  // A new turn starts at 15:00. If we are past 15:00, the "turn date" is today.
-  // If we are before 15:00, the "turn date" is actually yesterday.
-  const turnDateObj = new Date(now);
-  if (now.getHours() < 15) {
-    turnDateObj.setDate(turnDateObj.getDate() - 1);
-  }
-  const year = turnDateObj.getFullYear();
-  const month = String(turnDateObj.getMonth() + 1).padStart(2, '0');
-  const day = String(turnDateObj.getDate()).padStart(2, '0');
-  const currentTurnDateKey = `${year}-${month}-${day}`;
-
-  if (newState.lastDayChangeDate !== currentTurnDateKey) {
-    if (newState.lastDayChangeDate !== null) {
-      newState.currentOwner = getOtherOwnerIndex(newState.currentOwner);
-    }
-    newState.lastDayChangeDate = currentTurnDateKey;
-    changed = true;
-  }
-
-  // 2. Check for expired makeups
-  const currentSlot = getCurrentSlot();
-  if (currentSlot === SLOTS.MANANA) return changed ? newState : appState; // still time
-
-  if (!newState.pendingMorning) return changed ? newState : appState;
-
-  if (typeof newState.failedDays !== 'object') {
-    newState.failedDays = { Goti: newState.failedDays || 0, Vale: newState.failedDays || 0 };
-  }
-
-  for (const user of USERS) {
-    if (newState.pendingMorning[user] && currentSlot === SLOTS.TARDE) {
-      // Morning is now over, auto-punish
-      newState.pendingMorning[user] = false;
-      newState.punishments[user] = (newState.punishments[user] || 0) + 2;
-      newState.streaks[user].current = 0;
-      newState.failedDays[user] += 1;
-      newState.entries = keepRecentDays([{
-        id: `${todayKey}-auto-castigo-${user}-${Date.now()}`,
-        date: todayKey,
-        slot: 'Auto',
-        owner: user,
-        action: 'Castigo automático',
-        reason: 'No recuperó el turno de mañana. +2 días de castigo.',
-        status: 'castigo'
-      }, ...newState.entries]);
-      changed = true;
-    }
-  }
-
-  return changed ? newState : appState;
+  // Turn flip and auto-punishments are now handled reliably by the server.
+  // The client doesn't need to mutate state for this anymore.
+  return appState;
 }
