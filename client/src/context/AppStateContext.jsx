@@ -26,7 +26,9 @@ export const AppStateProvider = ({ children }) => {
     
     newSocket.on('stateUpdated', (newState) => {
       // Save every state update to localStorage as disaster-recovery backup
-      try { localStorage.setItem(STATE_BACKUP_KEY, JSON.stringify(newState)); } catch {}
+      if (!newState.isDefaultState) {
+        try { localStorage.setItem(STATE_BACKUP_KEY, JSON.stringify(newState)); } catch {}
+      }
       appStateRef.current = newState;
       setAppState(newState);
     });

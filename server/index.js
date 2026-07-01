@@ -166,15 +166,23 @@ function checkExpiredMakeups() {
 
 let appState = loadState();
 let stateRestoredFromClient = false;
+let waitingForBackup = isDefaultState(appState);
+
+// Give up waiting for backup after 15 seconds so app can function if no backup exists
+if (waitingForBackup) {
+  setTimeout(() => { waitingForBackup = false; }, 15000);
+}
 
 // Run turn-flip + expired-makeup check every minute
 setInterval(() => {
+  if (waitingForBackup) return;
   checkAndFlipTurn();
   checkExpiredMakeups();
 }, 60_000);
 
 // Also run at boot (after socket server is ready)
 setTimeout(() => {
+  if (waitingForBackup) return;
   checkAndFlipTurn();
   checkExpiredMakeups();
 }, 1000);
@@ -184,13 +192,14 @@ setTimeout(() => {
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // Send current state to new client
-  socket.emit('stateUpdated', appState);
-
   // If the server just restarted and lost data, ask clients to restore
   if (isDefaultState(appState) && !stateRestoredFromClient) {
     console.log('[State] Server has no data, requesting backup from client...');
     socket.emit('requestStateBackup');
+    // Tell client not to overwrite its backup with this empty state
+    socket.emit('stateUpdated', { ...appState, isDefaultState: true });
+  } else {
+    socket.emit('stateUpdated', appState);
   }
 
   // Client sends back its localStorage backup
@@ -198,9 +207,14 @@ io.on('connection', (socket) => {
     if (!stateRestoredFromClient && clientState && clientState.entries && clientState.entries.length > 0) {
       console.log(`[State] Restoring ${clientState.entries.length} entries from client backup`);
       stateRestoredFromClient = true;
+      waitingForBackup = false;
       appState = { ...JSON.parse(JSON.stringify(initialState)), ...clientState };
       saveState(appState);
       io.emit('stateUpdated', appState);
+      
+      // Now that we have state, check if we need to flip turns immediately
+      checkAndFlipTurn();
+      checkExpiredMakeups();
     }
   });
 
